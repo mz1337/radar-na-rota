@@ -1,0 +1,4 @@
+# base gerada localmente (no GitHub ela é gerada pelo workflow)
+app/data/
+__pycache__/
+*.pyc

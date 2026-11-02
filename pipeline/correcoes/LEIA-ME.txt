@@ -1,0 +1,8 @@
+Coloque aqui os arquivos exportados pelo app em
+"Dados e alertas > Suas correções > Exportar correções" (correcoes-AAAA-MM-DD.json).
+
+Na próxima atualização da base:
+- os radares marcados como "Não existe" somem para todo mundo;
+- os radares novos ou corrigidos entram na base com prioridade sobre as outras fontes.
+
+Pode deixar vários arquivos aqui; todos são lidos.

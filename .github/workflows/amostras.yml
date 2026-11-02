@@ -19,12 +19,13 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar os modelos de voz (CPU)
+        timeout-minutes: 25
         run: |
-          which ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
           pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
           pip install chatterbox-tts piper-tts
 
       - name: Gerar as amostras
+        timeout-minutes: 60
         run: python pipeline/amostras_voz.py --saida amostras
 
       - name: Guardar no repositório e publicar

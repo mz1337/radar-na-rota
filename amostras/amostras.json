@@ -1,0 +1,31 @@
+[
+ {
+  "arquivo": "chatterbox-feminina-a.wav",
+  "nome": "Feminina A",
+  "motor": "Chatterbox Multilingual",
+  "segundos": 129
+ },
+ {
+  "arquivo": "chatterbox-feminina-b.wav",
+  "nome": "Feminina B (sotaque mais neutro)",
+  "motor": "Chatterbox Multilingual",
+  "segundos": 118
+ },
+ {
+  "arquivo": "chatterbox-masculina-a.wav",
+  "nome": "Masculina A",
+  "motor": "Chatterbox Multilingual",
+  "segundos": 167
+ },
+ {
+  "arquivo": "chatterbox-masculina-b.wav",
+  "nome": "Masculina B (sotaque mais neutro)",
+  "motor": "Chatterbox Multilingual",
+  "segundos": 156
+ },
+ {
+  "arquivo": "piper-atual.wav",
+  "nome": "Voz atual (Piper)",
+  "motor": "Piper TTS"
+ }
+]

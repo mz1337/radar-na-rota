@@ -34,6 +34,7 @@ jobs:
           mkdir -p site
           cp -r app/. site/
           rm -rf site/data
+          if [ -d amostras ]; then cp -r amostras site/amostras; fi
 
       - name: Gerar a base de radares
         run: >

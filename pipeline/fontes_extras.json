@@ -1,0 +1,21 @@
+{
+  "_como_usar": "Listas oficiais extras de radares. Cada item precisa de id (curto, sem espaços), nome e tipo. Tipos: csv (url), geojson (url), ckan (portal + busca, ou portal + pacote), arcgis (url da camada do MapServer/FeatureServer). As colunas de latitude, longitude, velocidade e tipo são reconhecidas pelo nome. Para desligar uma fonte, use \"ativo\": false.",
+  "fontes": [
+    {
+      "id": "mogi",
+      "nome": "Prefeitura de Mogi das Cruzes (SP)",
+      "tipo": "csv",
+      "url": "https://dados.mogidascruzes.sp.gov.br/dataset/b93af036-8ed9-4442-82e4-7bc8c3d6c64f/resource/822a6c76-4c9b-413b-8299-abd40f903bf4/download/localizacao_radares2.csv",
+      "ativo": true
+    },
+    {
+      "id": "recife",
+      "nome": "Prefeitura do Recife (PE) · CTTU",
+      "tipo": "ckan",
+      "portal": "https://dados.recife.pe.gov.br",
+      "busca": "Equipamentos de Monitoramento e Fiscalização de Trânsito",
+      "formato": "CSV",
+      "ativo": true
+    }
+  ]
+}

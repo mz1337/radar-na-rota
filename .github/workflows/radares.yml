@@ -41,6 +41,19 @@ jobs:
           --saida site/data/radares.json
           --anterior "${{ steps.pages.outputs.base_url }}/data/radares.json"
 
+      - name: Guardar a voz entre execuções
+        uses: actions/cache@v4
+        with:
+          path: .voz-cache
+          key: voz-${{ hashFiles('pipeline/gerar_voz.py') }}
+
+      - name: Gerar a voz natural dos alertas
+        continue-on-error: true
+        run: |
+          which ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+          pip install piper-tts
+          python pipeline/gerar_voz.py --saida site/audio --cache .voz-cache
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

@@ -67,7 +67,7 @@ def log(msg: str) -> None:
 
 # ----------------------------------------------------------------------------- rede
 def http_get(url: str, data: bytes | None = None, headers: dict | None = None,
-             timeout: int = 180, tries: int = 3) -> bytes:
+             timeout: int = 45, tries: int = 2) -> bytes:
     h = {"User-Agent": UA, "Accept": "*/*"}
     h.update(headers or {})
     last: Exception | None = None

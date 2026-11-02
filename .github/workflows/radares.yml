@@ -1,0 +1,56 @@
+name: Atualizar radares e publicar
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * 1"   # toda segunda-feira, 03:17 em Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Montar o site
+        run: |
+          mkdir -p site
+          cp -r app/. site/
+          rm -rf site/data
+
+      - name: Gerar a base de radares
+        run: >
+          python pipeline/build_radares.py
+          --saida site/data/radares.json
+          --anterior "${{ steps.pages.outputs.base_url }}/data/radares.json"
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  publicar:
+    needs: gerar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

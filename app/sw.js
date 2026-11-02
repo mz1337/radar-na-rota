@@ -1,8 +1,8 @@
 /* Radar na Rota: service worker.
    Guarda o app, a biblioteca do mapa, a base de radares e os pedaços de mapa já vistos,
    para o app abrir e alertar mesmo com sinal fraco na estrada. */
-const VERSAO = 'rnr-v2';
-const APP = `${VERSAO}-app`, LIB = `${VERSAO}-lib`, DADOS = `${VERSAO}-dados`, MAPA = 'rnr-mapa';
+const VERSAO = 'rnr-v3';
+const APP = `${VERSAO}-app`, LIB = `${VERSAO}-lib`, DADOS = `${VERSAO}-dados`, MAPA = 'rnr-mapa', VOZ = 'rnr-voz';
 const MAX_MAPA = 4000;
 const CASCA = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 const BIBLIOTECAS = ['https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js', 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'];
@@ -18,7 +18,7 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k !== MAPA && !k.startsWith(VERSAO)) await caches.delete(k);
+    for (const k of await caches.keys()) if (k !== MAPA && k !== VOZ && !k.startsWith(VERSAO)) await caches.delete(k);
     await self.clients.claim();
   })());
 });
@@ -74,6 +74,8 @@ self.addEventListener('fetch', (e) => {
 
   if (url.origin === self.location.origin) {
     if (url.pathname.endsWith('/data/radares.json')) return e.respondWith(redePrimeiro(req, DADOS));
+    if (url.pathname.includes('/audio/') && !url.pathname.endsWith('manifest.json')) return e.respondWith(cacheprimeiro(req, VOZ));
+    if (url.pathname.endsWith('/audio/manifest.json')) return e.respondWith(redePrimeiro(req, VOZ));
     if (req.mode === 'navigate') return e.respondWith(redePrimeiro(req, APP).catch(() => caches.match('index.html')));
     return e.respondWith(redePrimeiro(req, APP));
   }

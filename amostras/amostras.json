@@ -1,31 +1,85 @@
-[
- {
-  "arquivo": "chatterbox-feminina-a.wav",
-  "nome": "Feminina A",
-  "motor": "Chatterbox Multilingual",
-  "segundos": 129
- },
- {
-  "arquivo": "chatterbox-feminina-b.wav",
-  "nome": "Feminina B (sotaque mais neutro)",
-  "motor": "Chatterbox Multilingual",
-  "segundos": 118
- },
- {
-  "arquivo": "chatterbox-masculina-a.wav",
-  "nome": "Masculina A",
-  "motor": "Chatterbox Multilingual",
-  "segundos": 167
- },
- {
-  "arquivo": "chatterbox-masculina-b.wav",
-  "nome": "Masculina B (sotaque mais neutro)",
-  "motor": "Chatterbox Multilingual",
-  "segundos": 156
- },
- {
-  "arquivo": "piper-atual.wav",
-  "nome": "Voz atual (Piper)",
-  "motor": "Piper TTS"
- }
-]
+{
+ "frases": [
+  "Radar à frente. Limite sessenta.",
+  "Atenção! Lombada eletrônica próxima. Limite quarenta. Reduza a velocidade.",
+  "Alertas de radar ligados. Boa viagem."
+ ],
+ "ref_txt": "Olá! Eu vou te avisar sempre que houver um radar no seu caminho.",
+ "itens": [
+  {
+   "arquivo": "omni-feminina-a.wav",
+   "nome": "Feminina A · jovem, tom médio",
+   "motor": "OmniVoice (motor do VoiceStudio)",
+   "referencia": "ref-omni-feminina-a.wav",
+   "origem": "design",
+   "parametro": "female, young adult, moderate pitch",
+   "semente": 11,
+   "segundos": 262
+  },
+  {
+   "arquivo": "omni-feminina-b.wav",
+   "nome": "Feminina B · adulta, tom grave",
+   "motor": "OmniVoice (motor do VoiceStudio)",
+   "referencia": "ref-omni-feminina-b.wav",
+   "origem": "design",
+   "parametro": "female, middle-aged, low pitch",
+   "semente": 12,
+   "segundos": 262
+  },
+  {
+   "arquivo": "omni-feminina-c.wav",
+   "nome": "Feminina C · sotaque brasileiro (base Kokoro Dora)",
+   "motor": "OmniVoice (motor do VoiceStudio)",
+   "referencia": "ref-omni-feminina-c.wav",
+   "origem": "kokoro",
+   "parametro": "pf_dora",
+   "semente": 13,
+   "segundos": 206
+  },
+  {
+   "arquivo": "omni-masculina-a.wav",
+   "nome": "Masculina A · jovem, tom médio",
+   "motor": "OmniVoice (motor do VoiceStudio)",
+   "referencia": "ref-omni-masculina-a.wav",
+   "origem": "design",
+   "parametro": "male, young adult, moderate pitch",
+   "semente": 21,
+   "segundos": 239
+  },
+  {
+   "arquivo": "omni-masculina-b.wav",
+   "nome": "Masculina B · adulto, tom grave",
+   "motor": "OmniVoice (motor do VoiceStudio)",
+   "referencia": "ref-omni-masculina-b.wav",
+   "origem": "design",
+   "parametro": "male, middle-aged, low pitch",
+   "semente": 22,
+   "segundos": 248
+  },
+  {
+   "arquivo": "omni-masculina-c.wav",
+   "nome": "Masculina C · sotaque brasileiro (base Kokoro Alex)",
+   "motor": "OmniVoice (motor do VoiceStudio)",
+   "referencia": "ref-omni-masculina-c.wav",
+   "origem": "kokoro",
+   "parametro": "pm_alex",
+   "semente": 23,
+   "segundos": 202
+  },
+  {
+   "arquivo": "kokoro-feminina.wav",
+   "nome": "Kokoro Dora (sem OmniVoice)",
+   "motor": "Kokoro 82M"
+  },
+  {
+   "arquivo": "kokoro-masculina.wav",
+   "nome": "Kokoro Alex (sem OmniVoice)",
+   "motor": "Kokoro 82M"
+  },
+  {
+   "arquivo": "piper-atual.wav",
+   "nome": "Voz atual (Piper)",
+   "motor": "Piper TTS"
+  }
+ ]
+}

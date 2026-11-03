@@ -1,0 +1,96 @@
+name: Gerar vozes do app (OmniVoice)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: vozes
+  cancel-in-progress: false
+
+jobs:
+  voz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        voz: [omni-masculina-a, omni-masculina-b, omni-masculina-c, omni-feminina-a, omni-feminina-b, omni-feminina-c]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Guardar os modelos baixados
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-omnivoice-kokoro-v1
+
+      - name: Instalar OmniVoice (motor do VoiceStudio) na CPU
+        timeout-minutes: 25
+        run: |
+          pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install omnivoice || pip install git+https://github.com/k2-fsa/OmniVoice.git
+          pip install imageio-ffmpeg
+
+      - name: Gerar as falas
+        timeout-minutes: 240
+        run: |
+          V=${{ matrix.voz }}
+          REF="vozes/$V/ref.wav"
+          [ -f "$REF" ] || REF="amostras/ref-$V.wav"
+          cp "$REF" /tmp/ref.wav
+          python pipeline/gerar_voz_omni.py --voz "$V" --ref /tmp/ref.wav --saida "vozes/$V"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voz-${{ matrix.voz }}
+          path: vozes/${{ matrix.voz }}
+          retention-days: 3
+
+  publicar:
+    needs: voz
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: voz-*
+          path: novas
+
+      - name: Juntar as vozes e guardar no repositório
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p vozes
+          for d in novas/voz-*; do
+            [ -f "$d/manifest.json" ] || continue
+            V=${d#novas/voz-}
+            rm -rf "vozes/$V" && cp -r "$d" "vozes/$V"
+          done
+          python3 - <<'PY'
+          import json, os
+          ordem = ["omni-masculina-c", "omni-masculina-a", "omni-masculina-b", "omni-feminina-c", "omni-feminina-a", "omni-feminina-b"]
+          lista = []
+          for v in ordem:
+              p = os.path.join("vozes", v, "manifest.json")
+              if os.path.exists(p):
+                  m = json.load(open(p, encoding="utf-8"))
+                  lista.append({"id": v, "nome": m["voz"], "sexo": m["sexo"], "pasta": v, "versao": m["versao"]})
+          json.dump({"padrao": "omni-masculina-c", "vozes": lista}, open("vozes/vozes.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+          print(len(lista), "vozes")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A vozes
+          git commit -m "Vozes OmniVoice do app" || echo "nada mudou"
+          git pull --rebase && git push
+          gh workflow run radares.yml --ref main

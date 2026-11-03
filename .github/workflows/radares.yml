@@ -55,6 +55,14 @@ jobs:
           pip install piper-tts
           python pipeline/gerar_voz.py --saida site/audio --cache .voz-cache
 
+      - name: Copiar as vozes OmniVoice (VoiceStudio)
+        run: |
+          if [ -f vozes/vozes.json ]; then
+            mkdir -p site/audio
+            cp -r vozes/. site/audio/
+            find site/audio -name ref.wav -delete
+          fi
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

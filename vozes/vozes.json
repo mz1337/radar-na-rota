@@ -1,0 +1,47 @@
+{
+ "padrao": "omni-masculina-c",
+ "vozes": [
+  {
+   "id": "omni-masculina-c",
+   "nome": "Masculina C · sotaque BR",
+   "sexo": "m",
+   "pasta": "omni-masculina-c",
+   "versao": "4009f29f2367"
+  },
+  {
+   "id": "omni-masculina-a",
+   "nome": "Masculina A · jovem",
+   "sexo": "m",
+   "pasta": "omni-masculina-a",
+   "versao": "dd2a93f152f0"
+  },
+  {
+   "id": "omni-masculina-b",
+   "nome": "Masculina B · grave",
+   "sexo": "m",
+   "pasta": "omni-masculina-b",
+   "versao": "2cddcdd585d0"
+  },
+  {
+   "id": "omni-feminina-c",
+   "nome": "Feminina C · sotaque BR",
+   "sexo": "f",
+   "pasta": "omni-feminina-c",
+   "versao": "9f4f05ed1bd2"
+  },
+  {
+   "id": "omni-feminina-a",
+   "nome": "Feminina A · jovem",
+   "sexo": "f",
+   "pasta": "omni-feminina-a",
+   "versao": "d4b965dfae29"
+  },
+  {
+   "id": "omni-feminina-b",
+   "nome": "Feminina B · grave",
+   "sexo": "f",
+   "pasta": "omni-feminina-b",
+   "versao": "c64391bd7e4f"
+  }
+ ]
+}

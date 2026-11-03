@@ -718,7 +718,7 @@ function matchRoute(R,idx,corridor){
       out.push({r,along:best.along,off:best.d,brg,opposite});}}
   out.sort((x,y)=>x.along-y.along);
   const res=[];
-  for(const x of out){const p=res[res.length-1];if(p&&p.opposite===x.opposite&&x.along-p.along<25){if(!p.r.v&&x.r.v)p.r=x.r;continue;}res.push(x);}
+  for(const x of out){const p=res[res.length-1];if(p&&p.opposite===x.opposite&&x.along-p.along<25&&Math.abs(p.off-x.off)<8){if(!p.r.v&&x.r.v)p.r=x.r;continue;}res.push(x);}
   return res;
 }
 function snap(R,lat,lon,lastS){
@@ -1080,7 +1080,7 @@ function drawSign(t,v){
 }
 const routeLL=()=>S.route?S.route.ll||(S.route.ll=S.route.coords.map(c=>[c[1],c[0]])):null;
 const routeFC=()=>S.route?{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:routeLL()}}:EMPTY;
-const routeRadarsFC=()=>S.route?{type:'FeatureCollection',features:S.route.radars.map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[x.r.lon,x.r.lat]},properties:{id:x.r.id,t:x.r.t,v:x.r.v||0,opp:!!x.opposite}}))}:EMPTY;
+const routeRadarsFC=()=>S.route?{type:'FeatureCollection',features:S.route.radars.map(x=>({type:'Feature',geometry:{type:'Point',coordinates:[x.r.lon,x.r.lat]},properties:{id:x.r.id,t:x.r.t,v:x.r.v||0,opp:skipR(x)}}))}:EMPTY;
 const endsFC=()=>{if(!S.route)return EMPTY;const ll=routeLL();return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:ll[0]},properties:{k:'o'}},{type:'Feature',geometry:{type:'Point',coordinates:ll[ll.length-1]},properties:{k:'d'}}]};};
 const OVERLAYS=['route-case','route-line','radar-dots','radar-signs','route-radars','ends'];
 function ensureOverlays(){
@@ -1223,10 +1223,10 @@ async function computeRoute(){
       else if(p.q&&!isFinite(p.lat)){const r=await resolveText(p.q);p.lat=r.lat;p.lon=r.lon;p.label=r.label;}
     }
     const cs=pts.map(p=>(+p.lon).toFixed(6)+','+(+p.lat).toFixed(6)).join(';');let j=null,last='';
-    for(const base of OSRM){try{j=await fetchJSON(`${base}/${cs}?overview=full&geometries=geojson&steps=false&alternatives=false`,25000);if(j.code==='Ok'&&j.routes&&j.routes.length)break;last=j.message||j.code;j=null;}catch(e){last=e.message;j=null;}}
+    for(const base of OSRM){try{j=await fetchJSON(`${base}/${cs}?overview=full&geometries=geojson&steps=true&alternatives=false`,25000);if(j.code==='Ok'&&j.routes&&j.routes.length)break;last=j.message||j.code;j=null;}catch(e){last=e.message;j=null;}}
     if(!j)throw new Error('Não consegui calcular a rota agora ('+last+'). Tente de novo em instantes.');
     const r=j.routes[0];
-    S.route=C.makeRoute(r.geometry.coordinates.map(c=>[c[1],c[0]]),{dist:r.distance,dur:r.duration,pts:pts.map(p=>Object.assign({},p))});
+    S.route=C.makeRoute(r.geometry.coordinates.map(c=>[c[1],c[0]]),{dist:r.distance,dur:r.duration,pts:pts.map(p=>Object.assign({},p)),roads:roadsFromSteps(r)});
     rematch(true);saveRoute();
     if(popup)popup.remove();
     if(NAV.active){Object.assign(NAV,{mode:'route',s:0,off:false,offCount:0,arrived:false});$('#navMsg').hidden=true;$('#gmNav').hidden=false;$('#gmNav').href=gmDirUrl(true);}
@@ -1235,13 +1235,43 @@ async function computeRoute(){
   finally{busy=false;btn.disabled=false;btn.textContent='Ver radares na rota';}
 }
 function rematch(fresh){
-  const R=S.route;if(!R)return;R.radars=C.matchRoute(R,S.idx,S.settings.corridor);
-  drawRoute();if(!NAV.active||fresh)renderRouteView();
+  const R=S.route;if(!R)return;R.radars=C.matchRoute(R,S.idx,S.settings.corridor);applySide(R);
+  drawRoute();if(!NAV.active||fresh)renderRouteView();verifyRoads(R);
 }
+/* ---------- radar na via da rota ou numa rua ao lado ----------
+   Marginais e ruas paralelas ficam a poucos metros da rodovia, então só a distância não basta.
+   Para cada radar perto da rota pergunta ao OSRM (nearest) em qual via ele está e compara com o
+   nome/código das vias da rota naquele trecho. Sem nome conhecido, o radar continua valendo. */
+const skipR=x=>!!(x.opposite||x.side);
+const NEAR=['https://router.project-osrm.org/nearest/v1/driving','https://routing.openstreetmap.de/routed-car/nearest/v1/driving'];
+const ROADC=Object.assign({},LS.get('vias')||{});
+function roadsFromSteps(rt){const out=[];let s=0;for(const lg of rt.legs||[])for(const st of lg.steps||[]){out.push([Math.round(s),st.name||'',st.ref||'']);s+=st.distance||0;}
+  return out.length&&s>0?{tot:s,l:out}:null;}
+const normV=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function routeNamesAt(R,along){const rd=R.roads;if(!rd||!rd.l||!rd.l.length)return [];const k=rd.tot/(R.len||rd.tot),a0=(along-80)*k,a1=(along+80)*k,names=[];
+  for(let i=0;i<rd.l.length;i++){const s0=rd.l[i][0],s1=i+1<rd.l.length?rd.l[i+1][0]:rd.tot;if(s1<a0||s0>a1)continue;
+    for(const v of rd.l[i][2].split(';').concat(rd.l[i][1])){const n=normV(v);if(n)names.push(n);}}
+  return names;}
+const LATV=/\b(marginal|lateral|acesso|alca|retorno|contorno)\b/;
+const sameV=(a,b)=>a===b||(LATV.test(a)===LATV.test(b)&&a.length>=4&&b.length>=4&&(a.includes(b)||b.includes(a)));
+function isSide(R,x){const c=ROADC[x.r.id];if(!c||!c.length||x.off<3)return false;
+  const rn=routeNamesAt(R,x.along);if(!rn.length)return false;
+  const d0=c[0][1],hit=n=>{const v=normV(n);return !!v&&rn.some(r=>sameV(v,r));};
+  if(c.some(([n,d])=>d<=d0+8&&hit(n)))return false;   /* a via da rota está entre as mais próximas */
+  return !!normV(c[0][0]);}                             /* a via mais próxima tem outro nome */
+function applySide(R){for(const x of R.radars)x.side=isSide(R,x);}
+async function nearestRoads(lat,lon){for(const b of NEAR){try{const j=await fetchJSON(`${b}/${(+lon).toFixed(6)},${(+lat).toFixed(6)}?number=3`,8000);
+  if(j&&j.code==='Ok')return (j.waypoints||[]).map(w=>[w.name||'',Math.round(w.distance||0)]).sort((a,b)=>a[1]-b[1]);}catch(e){}}return null;}
+async function verifyRoads(R){if(!R||!R.roads||R.verifying)return;
+  const todo=R.radars.filter(x=>x.off>=3&&!ROADC[x.r.id]);if(!todo.length)return;R.verifying=true;let i=0,changed=false;
+  const work=async()=>{while(i<todo.length&&S.route===R){const x=todo[i++];const c=await nearestRoads(x.r.lat,x.r.lon);if(c){ROADC[x.r.id]=c;changed=true;}}};
+  await Promise.all([work(),work(),work()]);R.verifying=false;
+  if(changed){const ks=Object.keys(ROADC);if(ks.length>4000)for(const k of ks.slice(0,ks.length-4000))delete ROADC[k];LS.set('vias',ROADC);}
+  if(S.route===R&&changed){applySide(R);drawRoute();if(!NAV.active)renderRouteView();}}
 function saveRoute(){const R=S.route;if(!R){LS.del('route');return;}
-  LS.set('route',{pts:R.pts.map(p=>({lat:p.lat,lon:p.lon,label:p.label,me:!!p.me})),dist:R.dist,dur:R.dur,c:R.coords.map(c=>[Math.round(c[0]*1e5)/1e5,Math.round(c[1]*1e5)/1e5])});}
+  LS.set('route',{pts:R.pts.map(p=>({lat:p.lat,lon:p.lon,label:p.label,me:!!p.me})),dist:R.dist,dur:R.dur,roads:R.roads||null,c:R.coords.map(c=>[Math.round(c[0]*1e5)/1e5,Math.round(c[1]*1e5)/1e5])});}
 function restoreRoute(){const s=LS.get('route');if(!s||!s.c||s.c.length<2)return false;
-  S.route=C.makeRoute(s.c,{dist:s.dist,dur:s.dur,pts:s.pts});setPlace('from',s.pts[0]);setPlace('to',s.pts[s.pts.length-1]);S.via=s.pts.slice(1,-1);
+  S.route=C.makeRoute(s.c,{dist:s.dist,dur:s.dur,pts:s.pts,roads:s.roads||null});setPlace('from',s.pts[0]);setPlace('to',s.pts[s.pts.length-1]);S.via=s.pts.slice(1,-1);
   rematch(true);showView('route');if(isCompact())collapse(true);sheetPeek(true);return true;}
 function gmDirUrl(nav){
   const p=S.route?S.route.pts:[S.from,S.to];const o=p[0],d=p[p.length-1];let u='https://www.google.com/maps/dir/?api=1&travelmode=driving';
@@ -1250,17 +1280,18 @@ function gmDirUrl(nav){
   if(nav)u+='&dir_action=navigate';return u;
 }
 function renderRouteView(){
-  const R=S.route;if(!R)return;const act=R.radars.filter(x=>!x.opposite),op=R.radars.length-act.length;
+  const R=S.route;if(!R)return;const act=R.radars.filter(x=>!skipR(x)),op=R.radars.length-act.length;
   $('#rDist').textContent=C.fmtDist(R.dist);$('#rDur').textContent=C.fmtDur(R.dur)+' sem trânsito';
   $('#rCount').textContent=act.length;$('#rCountLbl').textContent=act.length===1?'radar':'radares';
-  const notes=[];if(op)notes.push(`${op} ${op===1?'radar fica':'radares ficam'} no sentido oposto e não ${op===1?'será alertado':'serão alertados'}.`);
+  const notes=[],nOp=R.radars.filter(x=>x.opposite).length,nSide=op-nOp;if(nOp)notes.push(`${nOp} ${nOp===1?'radar fica':'radares ficam'} no sentido oposto e não ${nOp===1?'será alertado':'serão alertados'}.`);
+  if(nSide)notes.push(`${nSide} ${nSide===1?'radar fica numa rua ao lado':'radares ficam em ruas ao lado'} da rota e não ${nSide===1?'será alertado':'serão alertados'}.`);
   if(!S.radars.length)notes.push('A lista de radares ainda está carregando; a contagem será atualizada.');
   $('#rNote').textContent=notes.join(' ');
   $('#gmOpen').href=gmDirUrl(false);
   const ol=$('#rList');ol.innerHTML='';
   if(!R.radars.length){const li=document.createElement('li');li.className='empty';li.textContent='Nenhum radar encontrado nesta rota com as listas carregadas.';ol.append(li);return;}
-  for(const x of R.radars){const li=document.createElement('li');if(x.opposite)li.className='opp';li.tabIndex=0;
-    li.innerHTML=signHTML(x.r,'sm')+`<div class="rl-t"><b>${esc(C.fmtDist(x.along))}</b> · ${esc(TYPES[x.r.t].short)}${x.opposite?'<em>sentido oposto</em>':''}<small>${esc(x.r.info||('Fonte: '+(C.SRCN[x.r.src]||x.r.src)))}</small></div>`;
+  for(const x of R.radars){const li=document.createElement('li');if(skipR(x))li.className='opp';li.tabIndex=0;
+    li.innerHTML=signHTML(x.r,'sm')+`<div class="rl-t"><b>${esc(C.fmtDist(x.along))}</b> · ${esc(TYPES[x.r.t].short)}${x.opposite?'<em>sentido oposto</em>':x.side?'<em>rua ao lado</em>':''}<small>${esc(x.r.info||('Fonte: '+(C.SRCN[x.r.src]||x.r.src)))}</small></div>`;
     const go=()=>{if(isCompact())collapse(true);sheetPeek(true);zeroPadding();map.flyTo({center:[x.r.lon,x.r.lat],zoom:16,bearing:0,pitch:0});setTimeout(()=>popupAt(x.r.lon,x.r.lat,popupHTML(x.r)),400);};
     li.addEventListener('click',go);li.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});ol.append(li);}
 }
@@ -1290,7 +1321,7 @@ async function startNav(mode,sim){
   keepAwake(true);
   if(sim)startSim();
   else NAV.watch=navigator.geolocation.watchPosition(onGeo,e=>navMsg(geoErr(e),true),{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
-  const n=S.route?S.route.radars.filter(x=>!x.opposite).length:0;
+  const n=S.route?S.route.radars.filter(x=>!skipR(x)).length:0;
   setTimeout(()=>say(mode==='route'?`Alertas ligados. ${n} ${n===1?'radar':'radares'} na rota.`:'Alertas de radar ligados.','ligados'),250);
 }
 function stopNav(){
@@ -1317,7 +1348,7 @@ function onFix(lat,lon,spd,hdg){
     const sn=C.snap(R,lat,lon,NAV.s);
     if(sn&&sn.d<=75){NAV.offCount=0;if(NAV.off){NAV.off=false;navMsg('');}NAV.s=Math.max(sn.along,NAV.s-40);}
     else if(++NAV.offCount>=3&&!NAV.off){NAV.off=true;navMsg('Você saiu da rota. Avisando radares à frente na direção em que você está indo.',false,true);say('Você saiu da rota.','saiu');}
-    if(!NAV.off){const up=R.radars.filter(x=>!x.opposite&&x.along>NAV.s-10);remaining=up.length;if(up[0])next={r:up[0].r,d:Math.max(0,up[0].along-NAV.s)};
+    if(!NAV.off){const up=R.radars.filter(x=>!skipR(x)&&x.along>NAV.s-10);remaining=up.length;if(up[0])next={r:up[0].r,d:Math.max(0,up[0].along-NAV.s)};
       if(!NAV.arrived&&NAV.s>=R.len-40){NAV.arrived=true;say('Você chegou ao destino.','chegou');}}
   }
   if(!next&&(NAV.mode==='free'||NAV.off)&&NAV.heading!=null){const a=C.aheadRadars(S.idx,lat,lon,NAV.heading,1600);remaining=a.length;if(a[0])next={r:a[0].r,d:a[0].d};}
@@ -1410,7 +1441,7 @@ function wireUI(){
   for(const id of ['#simSpd','#simMul'])$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
     $(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
     if(NAV.sim){if(id==='#simSpd')NAV.sim.kmh=+b.dataset.v;else NAV.sim.mult=+b.dataset.v;}});
-  $('#kmlBtn').onclick=()=>{const R=S.route;if(!R)return;const items=R.radars.filter(x=>!x.opposite).map(x=>x.r);
+  $('#kmlBtn').onclick=()=>{const R=S.route;if(!R)return;const items=R.radars.filter(x=>!skipR(x)).map(x=>x.r);
     if(!items.length){toast('Não há radares nesta rota para exportar.',true);return;}
     const name=`Radares ${(R.pts[0].label||'origem')} - ${(R.pts[R.pts.length-1].label||'destino')}`.replace(/[\\/:*?"<>|]/g,'').slice(0,80);
     download(C.toKML(items,name),name+'.kml','application/vnd.google-earth.kml+xml');

@@ -53,6 +53,7 @@ code{font-family:var(--mono);font-size:.92em}
 #map{position:fixed;inset:0;z-index:0;background:var(--bg)}
 .maplibregl-map{font-family:var(--font)}
 .maplibregl-ctrl-attrib{background:color-mix(in srgb,var(--surface) 85%,transparent)!important;color:var(--muted)!important;font-size:10.5px}
+.maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show){opacity:.55;transform:scale(.85);transform-origin:100% 100%}
 .maplibregl-ctrl-attrib a{color:var(--muted)!important}
 .maplibregl-popup-content{background:var(--surface);color:var(--fg);border-radius:14px;box-shadow:var(--shadow);padding:14px 14px 12px;font:14px/1.4 var(--font)}
 .maplibregl-popup-close-button{color:var(--muted);font-size:24px;width:44px;height:44px;right:0;top:0;border-radius:0 14px 0 12px}
@@ -1284,7 +1285,7 @@ function gmDirUrl(nav){
 }
 function renderRouteView(){
   const R=S.route;if(!R)return;const act=R.radars.filter(x=>!skipR(x)),op=R.radars.length-act.length;
-  $('#rDist').textContent=C.fmtDist(R.dist);$('#rDur').textContent=C.fmtDur(R.dur)+' sem trânsito';
+  $('#rDist').textContent=C.fmtDist(R.dist);$('#rDur').textContent=C.fmtDur(R.dur);
   $('#rCount').textContent=act.length;$('#rCountLbl').textContent=act.length===1?'radar':'radares';
   const notes=[],nOp=R.radars.filter(x=>x.opposite).length,nSide=op-nOp;if(nOp)notes.push(`${nOp} ${nOp===1?'radar fica':'radares ficam'} no sentido oposto e não ${nOp===1?'será alertado':'serão alertados'}.`);
   if(nSide)notes.push(`${nSide} ${nSide===1?'radar fica numa rua ao lado':'radares ficam em ruas ao lado'} da rota e não ${nSide===1?'será alertado':'serão alertados'}.`);
@@ -1294,7 +1295,7 @@ function renderRouteView(){
   const ol=$('#rList');ol.innerHTML='';
   if(!R.radars.length){const li=document.createElement('li');li.className='empty';li.textContent='Nenhum radar encontrado nesta rota com as listas carregadas.';ol.append(li);return;}
   for(const x of R.radars){const li=document.createElement('li');if(skipR(x))li.className='opp';li.tabIndex=0;
-    li.innerHTML=signHTML(x.r,'sm')+`<div class="rl-t"><b>${esc(C.fmtDist(x.along))}</b> · ${esc(TYPES[x.r.t].short)}${x.opposite?'<em>sentido oposto</em>':x.side?'<em>rua ao lado</em>':''}<small>${esc(x.r.info||('Fonte: '+(C.SRCN[x.r.src]||x.r.src)))}</small></div>`;
+    li.innerHTML=signHTML(x.r,'sm')+`<div class="rl-t"><b>${esc(C.fmtDist(x.along))}</b> · ${esc(TYPES[x.r.t].short)}${x.opposite?'<em>sentido oposto</em>':x.side?'<em>rua ao lado</em>':''}${x.r.info?`<small>${esc(x.r.info)}</small>`:''}</div>`;
     const go=()=>{if(isCompact())collapse(true);sheetPeek(true);zeroPadding();map.flyTo({center:[x.r.lon,x.r.lat],zoom:16,bearing:0,pitch:0});setTimeout(()=>popupAt(x.r.lon,x.r.lat,popupHTML(x.r)),400);};
     li.addEventListener('click',go);li.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});ol.append(li);}
 }
@@ -1320,7 +1321,7 @@ async function startNav(mode,sim){
   if(popup)popup.remove();
   document.body.classList.add('navigating');showView('nav');collapse(true);navMsg('');updateNorth();
   $('#gmNav').hidden=!S.route;if(S.route)$('#gmNav').href=gmDirUrl(true);
-  $('#simCtl').hidden=!sim;$('#navHint').hidden=!!sim;$('#hudSub').textContent=sim?'Simulando…':'Aguardando GPS…';
+  $('#simCtl').hidden=!sim;{const nh=(LS.get('navHintN')||0);$('#navHint').hidden=!!sim||nh>=2;if(!sim)LS.set('navHintN',nh+1);}$('#hudSub').textContent=sim?'Simulando…':'Aguardando GPS…';
   keepAwake(true);
   if(sim)startSim();
   else NAV.watch=navigator.geolocation.watchPosition(onGeo,e=>navMsg(geoErr(e),true),{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
@@ -1513,6 +1514,8 @@ async function init(){
     map=new maplibregl.Map({container:'map',style:await styleURL(name),center:v?[v[1],v[0]]:[-51.5,-14.5],zoom:v?v[2]:3.6,attributionControl:false,maxPitch:60,fadeDuration:0,dragRotate:true,touchPitch:true});
   }catch(e){fatal('Não foi possível iniciar o mapa: '+e.message);loadData(false);return;}
   map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
+  const fechaCred=()=>{const a=document.querySelector('.maplibregl-ctrl-attrib');if(a){a.classList.remove('maplibregl-compact-show');a.removeAttribute('open');}};
+  map.once('load',fechaCred);map.once('styledata',()=>setTimeout(fechaCred,0));
   map.on('styleimagemissing',e=>{const m=/^sg-(vel|sem|lom|med)-(\d+)$/.exec(e.id);if(!m||map.hasImage(e.id))return;map.addImage(e.id,drawSign(m[1],+m[2]),{pixelRatio:2});});
   map.on('load',ensureOverlays);map.on('styledata',ensureOverlays);
   map.on('click',onMapClick);map.on('mousemove',onMouseMove);

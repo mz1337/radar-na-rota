@@ -1254,8 +1254,11 @@ function routeNamesAt(R,along){const rd=R.roads;if(!rd||!rd.l||!rd.l.length)retu
   return names;}
 const LATV=/\b(marginal|lateral|acesso|alca|retorno|contorno)\b/;
 const sameV=(a,b)=>a===b||(LATV.test(a)===LATV.test(b)&&a.length>=4&&b.length>=4&&(a.includes(b)||b.includes(a)));
+const REFRX=/\b(BR|[A-Z]{2})[- ]?(\d{2,3})\b/g;
 function isSide(R,x){const c=ROADC[x.r.id];if(!c||!c.length||x.off<3)return false;
   const rn=routeNamesAt(R,x.along);if(!rn.length)return false;
+  /* radar com rodovia conhecida (ex.: ANTT "BR-101 Km 198") na mesma rodovia da rota: está na rota */
+  for(const m of String(x.r.info||'').toUpperCase().matchAll(REFRX)){const ref=normV(m[1]+' '+m[2]);if(rn.some(r=>r===ref||r.split(' ').join(' ').includes(ref)))return false;}
   const d0=c[0][1],hit=n=>{const v=normV(n);return !!v&&rn.some(r=>sameV(v,r));};
   if(c.some(([n,d])=>d<=d0+8&&hit(n)))return false;   /* a via da rota está entre as mais próximas */
   return !!normV(c[0][0]);}                             /* a via mais próxima tem outro nome */

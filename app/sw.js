@@ -1,7 +1,7 @@
 /* Radar na Rota: service worker.
    Guarda o app, a biblioteca do mapa, a base de radares e os pedaços de mapa já vistos,
    para o app abrir e alertar mesmo com sinal fraco na estrada. */
-const VERSAO = 'rnr-v6';
+const VERSAO = 'rnr-v7';
 const APP = `${VERSAO}-app`, LIB = `${VERSAO}-lib`, DADOS = `${VERSAO}-dados`, MAPA = 'rnr-mapa', VOZ = 'rnr-voz';
 const MAX_MAPA = 4000;
 const CASCA = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];

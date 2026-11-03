@@ -277,6 +277,10 @@ body.fabs-tight .fabs #recenter{opacity:1}
 .opt select{flex:0 1 60%;max-width:60%}
 .fine{padding:12px 18px calc(18px + var(--sab));margin:0;font-size:13px;color:var(--muted)}
 .panel .row{margin-top:10px}
+.adv>summary{list-style:none;cursor:pointer;padding:14px 18px;font-weight:800;color:var(--muted);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;min-height:var(--tap)}
+.adv>summary::-webkit-details-marker{display:none}
+.adv>summary::after{content:"+";font-size:20px}
+.adv[open]>summary::after{content:"–"}
 .panel .row>.btn{flex:1 1 140px}
 
 /* ===== celular em pé: painel inferior vira bottom sheet com alça ===== */
@@ -366,8 +370,7 @@ body.fabs-tight .fabs #recenter{opacity:1}
 <div class="fabs" id="fabs">
   <button class="fab" id="locBtn" type="button" aria-label="Mostrar minha localização" title="Minha localização"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg></button>
   <button class="fab" id="northBtn" type="button" aria-label="Apontar o mapa para o norte" title="Norte para cima" hidden><svg viewBox="0 0 24 24"><path d="M12 3 16 13H8Z" style="fill:var(--red);stroke:var(--red)"/><path d="M12 21 8 13h8Z"/></svg></button>
-  <button class="fab" id="layerBtn" type="button" aria-label="Trocar estilo do mapa" title="Estilo do mapa"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg></button>
-  <button class="fab" id="setBtn" type="button" aria-label="Dados, correções e alertas" title="Dados e alertas"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+  <button class="fab" id="setBtn" type="button" aria-label="Configurações" title="Configurações"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
   <button class="fab accent" id="recenter" type="button" aria-label="Voltar a seguir minha posição" title="Recentralizar" hidden><svg viewBox="0 0 24 24"><path d="M12 2 20 21 12 16.5 4 21Z"/></svg></button>
 </div>
 
@@ -377,12 +380,6 @@ body.fabs-tight .fabs #recenter{opacity:1}
     <p class="lead"><b>Para onde você vai?</b>Digite o destino ou cole um link do Google Maps para ver cada radar no caminho.</p>
     <button class="btn wide" id="freeStart" type="button"><svg viewBox="0 0 24 24"><path d="M12 2 20 21 12 16.5 4 21Z"/></svg>Só alertar radares à frente (sem rota)</button>
     <button class="btn ghost wide" id="installBtn" type="button" hidden><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Instalar o app</button>
-    <ul class="legend" aria-label="Legenda">
-      <li><i style="background:var(--c-vel)"></i>Velocidade</li>
-      <li><i style="background:var(--c-sem)"></i>Semáforo</li>
-      <li><i style="background:var(--c-lom)"></i>Lombada eletrônica</li>
-      <li><i style="background:var(--c-med)"></i>Velocidade média</li>
-    </ul>
   </div>
 
   <div id="routeView" hidden>
@@ -431,7 +428,27 @@ body.fabs-tight .fabs #recenter{opacity:1}
 <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastTxt"></span><button type="button" id="toastAct" hidden></button></div>
 
 <dialog class="card panel" id="panel" aria-labelledby="panelTitle">
-  <header><h2 id="panelTitle">Dados e alertas</h2><button class="mini" id="panelClose" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <header><h2 id="panelTitle">Configurações</h2><button class="mini" id="panelClose" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+  <section>
+    <h3>Alertas</h3>
+    <div class="opt"><label for="optNeural">Voz</label><select id="optNeural"><option value="piper">Voz natural (gravada)</option><option value="aparelho">Voz do aparelho</option></select></div>
+    <div class="opt"><label for="optMode">Quando avisar</label><select id="optMode"><option value="sempre">Sempre que chegar perto</option><option value="excesso">Só se eu estiver acima do limite</option></select></div>
+    <div class="opt" id="tolRow"><label for="optTol">Considerar excesso</label><select id="optTol"><option value="0">a partir do limite</option><option value="3">acima de +3 km/h</option><option value="5">acima de +5 km/h</option><option value="7">acima de +7 km/h</option></select></div>
+    <div class="chks"><label class="chk"><input type="checkbox" id="optVoice"> Voz</label><label class="chk"><input type="checkbox" id="optBeep"> Bipe</label><label class="chk"><input type="checkbox" id="optVib"> Vibrar</label></div>
+    <p id="tolNote">No modo "só acima do limite", radares sem limite conhecido continuam sendo avisados.</p>
+    <div class="row"><button class="btn sm" id="testBtn" type="button">Testar som e voz</button><button class="btn sm" id="installBtn2" type="button" hidden>Instalar o app</button></div>
+  </section>
+  <section>
+    <h3>Mapa</h3>
+    <div class="opt"><label for="optStyle">Estilo</label><select id="optStyle"><option value="claro">Claro</option><option value="simples">Simples</option><option value="noturno">Noturno</option></select></div>
+    <div class="chks"><label class="chk"><input type="checkbox" id="optUp"> Mapa gira com a direção</label></div>
+  </section>
+  <details class="adv">
+    <summary>Avançado</summary>
+  <section>
+    <h3>Rota</h3>
+    <div class="opt"><label for="optCor">Distância máxima da rota</label><select id="optCor"><option value="25">25 m (mais preciso)</option><option value="40">40 m</option><option value="60">60 m (pega mais)</option></select></div>
+  </section>
   <section>
     <h3>Base de radares</h3>
     <p class="st" id="baseSt"></p>
@@ -460,18 +477,8 @@ body.fabs-tight .fabs #recenter{opacity:1}
       <button class="btn sm" id="fixExport" type="button">Exportar correções</button>
       <button class="btn ghost sm" id="fixClear" type="button">Apagar correções</button>
     </div>
-    <p>Para levar as correções para a base de todos, coloque o arquivo exportado na pasta <code>pipeline/correcoes</code> do projeto.</p>
   </section>
-  <section>
-    <h3>Alertas</h3>
-    <div class="opt"><label for="optNeural">Voz</label><select id="optNeural"><option value="piper">Voz natural (gravada)</option><option value="aparelho">Voz do aparelho</option></select></div>
-    <div class="opt"><label for="optMode">Quando avisar</label><select id="optMode"><option value="sempre">Sempre que chegar perto</option><option value="excesso">Só se eu estiver acima do limite</option></select></div>
-    <div class="opt"><label for="optTol">Considerar excesso</label><select id="optTol"><option value="0">a partir do limite</option><option value="3">acima de +3 km/h</option><option value="5">acima de +5 km/h</option><option value="7">acima de +7 km/h</option></select></div>
-    <div class="opt"><label for="optCor">Distância máxima da rota</label><select id="optCor"><option value="25">25 m (mais preciso)</option><option value="40">40 m</option><option value="60">60 m (pega mais)</option></select></div>
-    <div class="chks"><label class="chk"><input type="checkbox" id="optVoice"> Voz</label><label class="chk"><input type="checkbox" id="optBeep"> Bipe</label><label class="chk"><input type="checkbox" id="optVib"> Vibrar</label><label class="chk"><input type="checkbox" id="optUp"> Mapa gira com a direção</label></div>
-    <p>No modo "só acima do limite", radares sem limite conhecido continuam sendo avisados.</p>
-    <div class="row"><button class="btn sm" id="testBtn" type="button">Testar som e voz</button><button class="btn sm" id="installBtn2" type="button" hidden>Instalar o app</button></div>
-  </section>
+  </details>
   <p class="fine">Use como apoio. As listas podem estar incompletas ou desatualizadas, e a sinalização da via sempre prevalece. Configure tudo antes de sair e não mexa no celular dirigindo.</p>
 </dialog>
 
@@ -1010,7 +1017,7 @@ function renderPanel(){
   $('#fixSt').textContent=nr||na?`${na} ${na===1?'radar adicionado ou corrigido':'radares adicionados ou corrigidos'} · ${nr} ${nr===1?'marcado':'marcados'} como inexistente`:'Nenhuma correção ainda.';
   $('#fixExport').disabled=!(nr||na);$('#fixClear').disabled=!(nr||na);
   $('#optVoice').checked=S.settings.voice;$('#optBeep').checked=S.settings.beep;$('#optVib').checked=S.settings.vib;$('#optUp').checked=S.settings.headingUp;
-  $('#optTol').value=String(S.settings.tol);$('#optCor').value=String(S.settings.corridor);$('#optMode').value=S.settings.mode;fillVoiceSelect();
+  $('#optTol').value=String(S.settings.tol);$('#optCor').value=String(S.settings.corridor);$('#optMode').value=S.settings.mode;$('#optStyle').value=curStyle;$('#tolRow').hidden=$('#tolNote').hidden=S.settings.mode!=='excesso';fillVoiceSelect();
 }
 async function readText(f){const buf=await f.arrayBuffer();let t=new TextDecoder('utf-8').decode(buf);if(t.includes('�'))t=new TextDecoder('windows-1252').decode(buf);return t;}
 function parseXML(text){
@@ -1130,8 +1137,7 @@ function popupHTML(r){
   return `<div class="pp"><div class="pp-h">${signHTML(r)}<div><b>${esc(T.label)}</b><br><span>${esc(lim)}${r.vp?` · pesados ${r.vp} km/h`:''}</span></div></div>`+
     (r.info?`<p>${esc(r.info)}</p>`:'')+`<p class="pp-src">Fonte: ${esc(src)}${r.dir?` · sentido ${r.dir.map(d=>Math.round(d)+'°').join('/')}`:''}</p>`+
     `<div class="pp-a main">`+(NAV.active?'':`<button type="button" class="go" data-act="to" data-lat="${r.lat}" data-lon="${r.lon}">Rota até aqui</button>`)+
-    `<a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">Maps</a>`+
-    `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${r.lat},${r.lon}" target="_blank" rel="noopener">Street View</a></div>`+
+    `<a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">Google Maps</a></div>`+
     `<details class="pp-fix"><summary>Informação errada?</summary><div class="pp-a"><button type="button" data-act="edit" data-id="${esc(r.id)}">Corrigir</button><button type="button" class="warn" data-act="rm" data-id="${esc(r.id)}">Não existe</button></div></details></div>`;
 }
 const FORM_T={vel:'Velocidade',sem:'Semáforo / avanço de sinal',lom:'Lombada eletrônica',med:'Velocidade média'};
@@ -1453,7 +1459,7 @@ function wireUI(){
 
   $('#locBtn').onclick=async()=>{try{const c=await getPos();updateMe(c.latitude,c.longitude,NAV.heading);map.flyTo({center:[c.longitude,c.latitude],zoom:Math.max(map.getZoom(),15)});}catch(e){toast(e.message,true);}};
   const order=['claro','simples','noturno'];
-  $('#layerBtn').onclick=async()=>{const n=order[(order.indexOf(curStyle)+1)%order.length];S.settings.style=n;saveSettings();await setStyle(n);toast(STYLES[n].nome);};
+  $('#optStyle').onchange=async e=>{const n=e.target.value;S.settings.style=n;saveSettings();await setStyle(n);};
   $('#recenter').onclick=()=>{NAV.follow=true;$('#recenter').hidden=true;if(meMarker){const ll=meMarker.getLngLat();followCam(ll.lat,ll.lng);}};
   $('#northBtn').onclick=()=>{
     if(NAV.active){S.settings.headingUp=!S.settings.headingUp;saveSettings();toast(S.settings.headingUp?'O mapa gira com a direção.':'Norte sempre para cima.');if(!S.settings.headingUp)map.easeTo({bearing:0,pitch:0,duration:500});}
@@ -1476,7 +1482,7 @@ function wireUI(){
   $('#optBeep').onchange=e=>{S.settings.beep=e.target.checked;saveSettings();};
   $('#optVib').onchange=e=>{S.settings.vib=e.target.checked;saveSettings();};
   $('#optUp').onchange=e=>{S.settings.headingUp=e.target.checked;saveSettings();};
-  $('#optMode').onchange=e=>{S.settings.mode=e.target.value;saveSettings();};
+  $('#optMode').onchange=e=>{S.settings.mode=e.target.value;saveSettings();$('#tolRow').hidden=$('#tolNote').hidden=S.settings.mode!=='excesso';};
   $('#optNeural').onchange=async e=>{const v=e.target.value;unlockAudio();S.settings.neural=v!=='aparelho';if(S.settings.neural)S.settings.vozId=v;saveSettings();
     if(S.settings.neural){SND.pack=null;await loadVoicePack();}
     const m=NAV.muted;NAV.muted=false;announce(null,['teste'],'Teste de som. Radar à frente, limite 60.');NAV.muted=m;};

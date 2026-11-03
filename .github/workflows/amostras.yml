@@ -10,7 +10,7 @@ permissions:
 jobs:
   amostras:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v5
 
@@ -18,14 +18,26 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Instalar os modelos de voz (CPU)
+      - name: Guardar os modelos baixados
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-omnivoice-kokoro-v1
+
+      - name: Instalar OmniVoice (motor do VoiceStudio) na CPU
         timeout-minutes: 25
         run: |
           pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
-          pip install chatterbox-tts piper-tts
+          pip install omnivoice || pip install git+https://github.com/k2-fsa/OmniVoice.git
+          pip install piper-tts soundfile
+
+      - name: Instalar Kokoro (vozes pt-BR de referência)
+        continue-on-error: true
+        timeout-minutes: 15
+        run: pip install kokoro
 
       - name: Gerar as amostras
-        timeout-minutes: 60
+        timeout-minutes: 90
         run: python pipeline/amostras_voz.py --saida amostras
 
       - name: Guardar no repositório e publicar
@@ -34,7 +46,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add amostras
-          git commit -m "Amostras de voz" || echo "nada mudou"
+          git add -A amostras
+          git commit -m "Amostras de voz (OmniVoice)" || echo "nada mudou"
           git push
           gh workflow run radares.yml --ref main

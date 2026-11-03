@@ -122,6 +122,12 @@ code{font-family:var(--mono);font-size:.92em}
 .gm{display:grid;gap:8px}
 .hint{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
 .search.collapsed .fields{display:none}
+/* com rota definida a busca vira uma barra única: logo + origem → destino */
+.search.collapsed{display:flex;align-items:center}
+.search.collapsed .brand{min-height:0;padding:6px 0 6px 8px}
+.search.collapsed .brand .logo{--s:30px}
+.search.collapsed .brand-t,.search.collapsed #collapseBtn{display:none}
+.search.collapsed .od{flex:1;min-width:0;width:auto;margin:6px 6px 6px 4px;min-height:44px;border:0;background:transparent;padding:0 8px}
 .search{max-height:calc(100dvh - var(--sat) - 20px);overflow:auto;overscroll-behavior:contain}
 
 /* ---- botões flutuantes ---- */
@@ -145,17 +151,21 @@ body.fabs-tight .fabs #recenter{opacity:1}
 .legend li{display:flex;align-items:center;gap:6px}
 .legend i{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--sign-face);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .sum{display:flex;align-items:stretch;gap:10px;margin-bottom:10px}
-.sum-l{flex:1;min-width:0;background:var(--hwy);color:var(--hwy-ink);border-radius:var(--r-ctl);padding:10px 14px}
-.sum-d{font:900 28px/1 var(--font);letter-spacing:-.02em;font-variant-numeric:tabular-nums;padding-top:3px}
+.sum-l{flex:1;min-width:0;background:var(--hwy);color:var(--hwy-ink);border-radius:var(--r-ctl);padding:8px 14px}
+.sum-d{font:900 24px/1 var(--font);letter-spacing:-.02em;font-variant-numeric:tabular-nums;padding-top:3px}
 .sum-t{font:600 13px/1.2 var(--mono);opacity:.92;margin-top:5px}
-.sum-r{display:grid;place-items:center;align-content:center;min-width:96px;border:2px solid var(--line);border-radius:var(--r-ctl);padding:6px 10px;text-align:center;background:var(--surface)}
-.sum-r b{font:900 30px/1 var(--font);color:var(--red-text);font-variant-numeric:tabular-nums;padding-top:3px}
+.sum-r{display:grid;place-items:center;align-content:center;min-width:84px;border:1px solid var(--line);border-radius:var(--r-ctl);padding:4px 10px;text-align:center;background:var(--surface)}
+.sum-r b{font:900 24px/1 var(--font);color:var(--red-text);font-variant-numeric:tabular-nums;padding-top:3px}
 .sum-r>span{font-size:12.5px;color:var(--muted);font-weight:800}
 .sum-more{display:none;font:800 11.5px/1 var(--font);color:var(--link);margin-top:4px;align-items:center;gap:2px}
 .sum-more svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 .note{margin:0 0 10px;font-size:13px;color:var(--muted)}
 .note:empty{display:none}
 #routeView .row{display:grid;grid-template-columns:1.15fr 1fr;gap:8px}
+#routeView .row.acts{grid-template-columns:1.35fr 1fr var(--tap)}
+.btn.more{padding:0;min-width:var(--tap)}
+.btn.more svg{fill:currentColor;stroke:none;width:22px;height:22px}
+#routeView .row.tools[hidden]{display:none}
 #routeView .row.tools{grid-template-columns:repeat(3,1fr);margin-top:8px}
 #routeView .row.tools .btn{padding:0 6px;font-size:13.5px;color:var(--fg)}
 #gmOpen{white-space:normal;text-align:center;line-height:1.15;font-size:14px}
@@ -232,8 +242,11 @@ body.fabs-tight .fabs #recenter{opacity:1}
 .pp-a button.go{background:var(--hwy);border-color:var(--hwy);color:var(--hwy-ink)}
 .pp-a button.warn{color:var(--red-text)}
 .pp-a button.danger{background:var(--red);border-color:var(--red);color:#fff}
-.pp-fix{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
-.pp-fix>small{display:block;font-size:12px;font-weight:700;color:var(--muted)}
+.pp-a.main{flex-wrap:nowrap}
+.pp-a.main .go{flex:1.5 1 auto}
+.pp-fix{margin-top:8px}
+.pp-fix>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;min-height:32px;font-size:12.5px;font-weight:700;color:var(--muted);text-decoration:underline dotted;text-underline-offset:3px}
+.pp-fix>summary::-webkit-details-marker{display:none}
 .pp-fix .pp-a{margin-top:6px}
 .pp-pick{padding-right:30px}
 .pp-pick .pp-a{margin:0;display:grid;grid-template-columns:1fr 1fr}
@@ -275,6 +288,12 @@ body.fabs-tight .fabs #recenter{opacity:1}
   .maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left{bottom:var(--sheet-h,0px)}
   .toast{left:max(8px,var(--sal));right:calc(max(8px,var(--sar)) + 58px);transform:none;width:auto;max-width:none;bottom:calc(var(--sheet-h,0px) + 12px)}
   #navView{padding-top:14px}
+  /* radar tocado: o cartão ocupa o lugar do painel (nada flutuando por cima do mapa) */
+  .maplibregl-popup{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;transform:none!important;max-width:none!important;width:auto!important;align-items:stretch!important;z-index:1015;display:flex!important;flex-direction:column!important}
+  .maplibregl-popup-tip{display:none!important}
+  .maplibregl-popup-content{border-radius:20px 20px 0 0;padding:16px max(16px,var(--sar)) calc(12px + var(--sab)) max(16px,var(--sal));box-shadow:0 -8px 28px rgba(0,0,0,.35)}
+  .pp{min-width:0}
+  body.pop-open .sheet,body.pop-open .fabs,body.pop-open .toast{visibility:hidden}
 }
 /* alça e estado recolhido: celular em pé e celular deitado */
 @media (max-width:640px),(max-height:500px){
@@ -371,11 +390,12 @@ body.fabs-tight .fabs #recenter{opacity:1}
       <div class="sum-r" id="sumR" role="button" tabindex="0" aria-controls="rList" aria-label="Ver lista de radares no caminho"><b id="rCount">0</b><span id="rCountLbl">radares</span><span class="sum-more">Ver lista<svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></span></div>
     </div>
     <p class="note" id="rNote"></p>
-    <div class="row">
+    <div class="row acts">
       <button class="btn primary" id="navStart" type="button"><svg viewBox="0 0 24 24"><path d="M12 2 20 21 12 16.5 4 21Z"/></svg>Iniciar alertas</button>
-      <a class="btn" id="gmOpen" href="#" target="_blank" rel="noopener">Abrir no Google&nbsp;Maps</a>
+      <a class="btn" id="gmOpen" href="#" target="_blank" rel="noopener">Google&nbsp;Maps</a>
+      <button class="btn more" id="moreBtn" type="button" aria-expanded="false" aria-controls="tools" aria-label="Mais opções" title="Mais opções"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
     </div>
-    <div class="row tools">
+    <div class="row tools" id="tools" hidden>
       <button class="btn ghost sm" id="simBtn" type="button">Simular</button>
       <button class="btn ghost sm" id="kmlBtn" type="button">Baixar KML</button>
       <button class="btn ghost sm" id="clearBtn" type="button">Limpar rota</button>
@@ -1096,17 +1116,22 @@ async function setStyle(name){
   if(!STYLES[name])name='claro';curStyle=name;const url=await styleURL(name);
   if(map)map.setStyle(url,{diff:false});return url;
 }
-function popupAt(lon,lat,html){if(popup)popup.remove();popup=new maplibregl.Popup({maxWidth:'310px',offset:16,focusAfterOpen:false}).setLngLat([lon,lat]).setHTML(html).addTo(map);return popup;}
+function popupAt(lon,lat,html){if(popup)popup.remove();
+  const pp=popup=new maplibregl.Popup({maxWidth:'310px',offset:16,focusAfterOpen:false}).setLngLat([lon,lat]).setHTML(html).addTo(map);
+  document.body.classList.add('pop-open');pp.on('close',()=>{if(popup===pp)document.body.classList.remove('pop-open');});
+  if(isMobile())requestAnimationFrame(()=>{const el=pp.getElement();if(!el)return;const h=el.offsetHeight,q=map.project([lon,lat]);
+    const lo=($('#top').getBoundingClientRect().bottom||0)+40,hi=innerHeight-h-40;if(hi>lo&&(q.y>hi||q.y<lo))map.panBy([0,q.y-(lo+hi)/2],{duration:300});});
+  return pp;}
 function signHTML(r,extra){return `<span class="sg sg-${r.t}${extra?' '+extra:''}"><b>${r.v||'?'}</b></span>`;}
 function popupHTML(r){
   const T=TYPES[r.t],lim=r.v?`Limite ${r.v} km/h`:'Limite não informado';
   const src=(r.srcs||[r.src]).map(s=>(S.meta.base&&S.meta.base.fontes&&S.meta.base.fontes[s]&&S.meta.base.fontes[s].nome)||C.SRCN[s]||s).join(' + ');
   return `<div class="pp"><div class="pp-h">${signHTML(r)}<div><b>${esc(T.label)}</b><br><span>${esc(lim)}${r.vp?` · pesados ${r.vp} km/h`:''}</span></div></div>`+
     (r.info?`<p>${esc(r.info)}</p>`:'')+`<p class="pp-src">Fonte: ${esc(src)}${r.dir?` · sentido ${r.dir.map(d=>Math.round(d)+'°').join('/')}`:''}</p>`+
-    `<div class="pp-a">`+(NAV.active?'':`<button type="button" class="go" data-act="to" data-lat="${r.lat}" data-lon="${r.lon}">Rota até aqui</button>`)+
-    `<a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">Google Maps</a>`+
+    `<div class="pp-a main">`+(NAV.active?'':`<button type="button" class="go" data-act="to" data-lat="${r.lat}" data-lon="${r.lon}">Rota até aqui</button>`)+
+    `<a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">Maps</a>`+
     `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${r.lat},${r.lon}" target="_blank" rel="noopener">Street View</a></div>`+
-    `<div class="pp-fix"><small>Informação errada?</small><div class="pp-a"><button type="button" data-act="edit" data-id="${esc(r.id)}">Corrigir</button><button type="button" class="warn" data-act="rm" data-id="${esc(r.id)}">Não existe</button></div></div></div>`;
+    `<details class="pp-fix"><summary>Informação errada?</summary><div class="pp-a"><button type="button" data-act="edit" data-id="${esc(r.id)}">Corrigir</button><button type="button" class="warn" data-act="rm" data-id="${esc(r.id)}">Não existe</button></div></details></div>`;
 }
 const FORM_T={vel:'Velocidade',sem:'Semáforo / avanço de sinal',lom:'Lombada eletrônica',med:'Velocidade média'};
 function fixFormHTML(lat,lon,r){
@@ -1376,6 +1401,7 @@ function wireUI(){
   $('#odLine').onclick=()=>{collapse(false);$('#to').focus();};
 
   $('#navStart').onclick=()=>startNav('route',false);
+  $('#moreBtn').onclick=()=>{const t=$('#tools'),open=t.hidden;t.hidden=!open;$('#moreBtn').setAttribute('aria-expanded',String(open));};
   $('#simBtn').onclick=()=>startNav('route',true);
   $('#freeStart').onclick=()=>startNav('free',false);
   $('#navStop').onclick=stopNav;

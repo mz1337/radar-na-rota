@@ -1,7 +1,7 @@
 /* Radar na Rota: service worker.
    Guarda o app, a biblioteca do mapa, a base de radares e os pedaços de mapa já vistos,
    para o app abrir e alertar mesmo com sinal fraco na estrada. */
-const VERSAO = 'rnr-v3';
+const VERSAO = 'rnr-v4';
 const APP = `${VERSAO}-app`, LIB = `${VERSAO}-lib`, DADOS = `${VERSAO}-dados`, MAPA = 'rnr-mapa', VOZ = 'rnr-voz';
 const MAX_MAPA = 4000;
 const CASCA = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
@@ -74,8 +74,8 @@ self.addEventListener('fetch', (e) => {
 
   if (url.origin === self.location.origin) {
     if (url.pathname.endsWith('/data/radares.json')) return e.respondWith(redePrimeiro(req, DADOS));
-    if (url.pathname.includes('/audio/') && !url.pathname.endsWith('manifest.json')) return e.respondWith(cacheprimeiro(req, VOZ));
-    if (url.pathname.endsWith('/audio/manifest.json')) return e.respondWith(redePrimeiro(req, VOZ));
+    if (url.pathname.includes('/audio/') && !url.pathname.endsWith('.json')) return e.respondWith(cacheprimeiro(req, VOZ));
+    if (url.pathname.includes('/audio/')) return e.respondWith(redePrimeiro(req, VOZ));
     if (req.mode === 'navigate') return e.respondWith(redePrimeiro(req, APP).catch(() => caches.match('index.html')));
     return e.respondWith(redePrimeiro(req, APP));
   }

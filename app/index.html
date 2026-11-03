@@ -443,7 +443,7 @@ body.fabs-tight .fabs #recenter{opacity:1}
   </section>
   <section>
     <h3>Alertas</h3>
-    <div class="opt"><label for="optNeural">Voz</label><select id="optNeural"><option value="1">Voz natural (gravada)</option><option value="0">Voz do aparelho</option></select></div>
+    <div class="opt"><label for="optNeural">Voz</label><select id="optNeural"><option value="piper">Voz natural (gravada)</option><option value="aparelho">Voz do aparelho</option></select></div>
     <div class="opt"><label for="optMode">Quando avisar</label><select id="optMode"><option value="sempre">Sempre que chegar perto</option><option value="excesso">Só se eu estiver acima do limite</option></select></div>
     <div class="opt"><label for="optTol">Considerar excesso</label><select id="optTol"><option value="0">a partir do limite</option><option value="3">acima de +3 km/h</option><option value="5">acima de +5 km/h</option><option value="7">acima de +7 km/h</option></select></div>
     <div class="opt"><label for="optCor">Distância máxima da rota</label><select id="optCor"><option value="25">25 m (mais preciso)</option><option value="40">40 m</option><option value="60">60 m (pega mais)</option></select></div>
@@ -808,7 +808,7 @@ const TYPE_COLOR=['match',['get','t'],'sem',TYPES.sem.hex,'lom',TYPES.lom.hex,'m
 const LS={get(k){try{const v=localStorage.getItem('rnr.'+k);return v?JSON.parse(v):null;}catch(e){return null;}},
   set(k,v){try{localStorage.setItem('rnr.'+k,JSON.stringify(v));return true;}catch(e){return false;}},
   del(k){try{localStorage.removeItem('rnr.'+k);}catch(e){}}};
-const DEF={voice:true,neural:true,beep:true,vib:true,tol:0,corridor:40,mode:'sempre',headingUp:true,srcOn:{antt:true,osm:true,outras:true},style:null};
+const DEF={voice:true,neural:true,vozId:'',beep:true,vib:true,tol:0,corridor:40,mode:'sempre',headingUp:true,srcOn:{antt:true,osm:true,outras:true},style:null};
 const saved=LS.get('settings')||{};
 const S={settings:Object.assign({},DEF,saved,{srcOn:Object.assign({},DEF.srcOn,saved.srcOn||{})}),
   src:{base:[],osm:[],antt:[],imp:[]},meta:{base:null,osm:0,antt:0},status:{base:'',osm:'',antt:''},err:{osm:'',antt:''},
@@ -843,7 +843,8 @@ const today=()=>new Date().toISOString().slice(0,10);
 /* Tudo toca por um único elemento <audio>, destravado no primeiro toque do usuário.
    No celular isso é o que funciona: o Web Audio fica mudo no modo silencioso do iPhone e
    a voz do sistema (speechSynthesis) do Android costuma descartar falas. */
-const SND={el:null,unlocked:false,q:[],busy:false,pack:null,blobs:{}};
+const SND={el:null,unlocked:false,q:[],busy:false,pack:null,base:'audio/',seq:0,blobs:{}};
+const VOZES={lista:[],padrao:null};
 function wavURL(notes){ /* notes: [freq, dur, gap, vol, square?] -> WAV PCM 16 bits em blob */
   const R=22050;let n=0;for(const x of notes)n+=Math.round((x[1]+x[2])*R);n=Math.max(n,1);
   const buf=new ArrayBuffer(44+n*2),dv=new DataView(buf),w=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
@@ -867,10 +868,24 @@ function sndNext(){const el=audioEl();const it=SND.q.shift();if(!it){SND.busy=fa
   SND.busy=true;el.src=it.url;const p=el.play();if(p&&p.catch)p.catch(()=>{SND.busy=false;SND.q=[];});}
 function sndPlay(items,interrupt){if(interrupt){SND.q=[];try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}SND.busy=false;}
   SND.q.push(...items);if(!SND.busy)sndNext();}
-async function loadVoicePack(){try{const r=await fetch('audio/manifest.json',{cache:'no-cache'});if(!r.ok)return;const j=await r.json();
-  if(j&&j.arquivos&&Object.keys(j.arquivos).length){SND.pack=j;
+/* vozes gravadas: audio/vozes.json lista as vozes OmniVoice (VoiceStudio); audio/manifest.json é a voz Piper */
+function vozAtual(){const v=S.settings.vozId;if(v==='piper')return 'piper';if(VOZES.lista.some(x=>x.id===v))return v;return VOZES.padrao||'piper';}
+function fillVoiceSelect(){const sel=$('#optNeural');if(!sel)return;const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const grp=(rot,sx)=>{const l=VOZES.lista.filter(v=>v.sexo===sx);return l.length?`<optgroup label="${rot}">`+l.map(v=>`<option value="${esc(v.id)}">${esc(v.nome)}</option>`).join('')+'</optgroup>':'';};
+  sel.innerHTML=grp('Masculinas','m')+grp('Femininas','f')+`<option value="piper">${VOZES.lista.length?'Voz robótica (Piper)':'Voz natural (gravada)'}</option><option value="aparelho">Voz do aparelho</option>`;
+  sel.value=S.settings.neural?vozAtual():'aparelho';}
+async function loadPack(base){try{const r=await fetch(base+'manifest.json',{cache:'no-cache'});if(!r.ok)return null;const j=await r.json();
+  return j&&j.arquivos&&Object.keys(j.arquivos).length?j:null;}catch(e){return null;}}
+async function loadVoicePack(){const seq=++SND.seq;
+  if(!VOZES.lista.length){try{const r=await fetch('audio/vozes.json',{cache:'no-cache'});if(r.ok){const j=await r.json();VOZES.lista=(j&&j.vozes)||[];VOZES.padrao=(j&&j.padrao)||(VOZES.lista[0]&&VOZES.lista[0].id)||null;}}catch(e){}}
+  fillVoiceSelect();
+  const v=VOZES.lista.find(x=>x.id===vozAtual());let base=v?'audio/'+v.pasta+'/':'audio/';let j=await loadPack(base);
+  if(!j&&base!=='audio/'){base='audio/';j=await loadPack(base);}
+  if(seq!==SND.seq)return !!j;
+  if(j){SND.pack=j;SND.base=base;
     /* baixa as falas aos poucos para funcionarem sem sinal na estrada */
-    setTimeout(async()=>{for(const f of Object.values(j.arquivos)){try{await fetch('audio/'+f);}catch(e){break;}}},4000);}}catch(e){}}
+    setTimeout(async()=>{for(const f of Object.values(j.arquivos)){if(seq!==SND.seq)break;try{await fetch(base+f);}catch(e){break;}}},4000);}
+  return !!j;}
 const soundOn=()=>S.settings.beep&&!NAV.muted;
 const voiceOn=()=>S.settings.voice&&!NAV.muted;
 function vib(p){if(S.settings.vib&&navigator.vibrate)try{navigator.vibrate(p);}catch(e){}}
@@ -881,7 +896,7 @@ if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=()=>{ptVoice=unde
 function speakNow(t,done){if(!('speechSynthesis' in window)){done&&done();return;}try{const u=new SpeechSynthesisUtterance(t);u.lang='pt-BR';const v=pickVoice();if(v)u.voice=v;u.rate=1.05;
   let fin=false;const end=()=>{if(!fin){fin=true;done&&done();}};u.onend=end;u.onerror=end;setTimeout(end,8000);speechSynthesis.speak(u);}catch(e){done&&done();}}
 const PACK_V=[0,20,30,40,50,60,70,80,90,100,110,120];
-const clip=k=>SND.pack&&SND.pack.arquivos[k]?{url:'audio/'+SND.pack.arquivos[k]}:null;
+const clip=k=>SND.pack&&SND.pack.arquivos[k]?{url:SND.base+SND.pack.arquivos[k]}:null;
 /* monta beep + fala: usa a voz natural pré-gravada quando existe, senão a voz do aparelho */
 function announce(beep,keys,text){const items=[];if(beep&&soundOn())items.push({url:SND.blobs[beep]});
   if(voiceOn()){const cs=S.settings.neural?keys.map(clip):[null];if(cs.length&&cs.every(Boolean))items.push(...cs);else if(text)items.push({speak:text});}
@@ -974,7 +989,7 @@ function renderPanel(){
   $('#fixSt').textContent=nr||na?`${na} ${na===1?'radar adicionado ou corrigido':'radares adicionados ou corrigidos'} · ${nr} ${nr===1?'marcado':'marcados'} como inexistente`:'Nenhuma correção ainda.';
   $('#fixExport').disabled=!(nr||na);$('#fixClear').disabled=!(nr||na);
   $('#optVoice').checked=S.settings.voice;$('#optBeep').checked=S.settings.beep;$('#optVib').checked=S.settings.vib;$('#optUp').checked=S.settings.headingUp;
-  $('#optTol').value=String(S.settings.tol);$('#optCor').value=String(S.settings.corridor);$('#optMode').value=S.settings.mode;$('#optNeural').value=S.settings.neural?'1':'0';
+  $('#optTol').value=String(S.settings.tol);$('#optCor').value=String(S.settings.corridor);$('#optMode').value=S.settings.mode;fillVoiceSelect();
 }
 async function readText(f){const buf=await f.arrayBuffer();let t=new TextDecoder('utf-8').decode(buf);if(t.includes('�'))t=new TextDecoder('windows-1252').decode(buf);return t;}
 function parseXML(text){
@@ -1401,7 +1416,9 @@ function wireUI(){
   $('#optVib').onchange=e=>{S.settings.vib=e.target.checked;saveSettings();};
   $('#optUp').onchange=e=>{S.settings.headingUp=e.target.checked;saveSettings();};
   $('#optMode').onchange=e=>{S.settings.mode=e.target.value;saveSettings();};
-  $('#optNeural').onchange=e=>{S.settings.neural=e.target.value==='1';saveSettings();};
+  $('#optNeural').onchange=async e=>{const v=e.target.value;unlockAudio();S.settings.neural=v!=='aparelho';if(S.settings.neural)S.settings.vozId=v;saveSettings();
+    if(S.settings.neural){SND.pack=null;await loadVoicePack();}
+    const m=NAV.muted;NAV.muted=false;announce(null,['teste'],'Teste de som. Radar à frente, limite 60.');NAV.muted=m;};
   $('#optTol').onchange=e=>{S.settings.tol=+e.target.value;saveSettings();};
   $('#optCor').onchange=e=>{S.settings.corridor=+e.target.value;saveSettings();if(S.route)rematch();};
   $('#testBtn').onclick=()=>{unlockAudio();const m=NAV.muted;NAV.muted=false;vib([150,80,150]);
